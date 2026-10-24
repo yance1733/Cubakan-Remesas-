@@ -1,5 +1,6 @@
 
-name: Build Cubakan Remesas APK
+
+       name: Build Cubakan Remesas APK
 
 on:
   workflow_dispatch:
@@ -62,4 +63,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CubakanRemesas-APK
+          path: '**/build/outputs/apk/debug/app-debug.apk'   name: CubakanRemesas-APK
           path: '**/build/outputs/apk/debug/app-debug.apk'
