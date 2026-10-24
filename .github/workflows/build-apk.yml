@@ -1,67 +1,43 @@
 
-
-       name: Build Cubakan Remesas APK
+name: Construir APK de Cubakan Remesas
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, principal]
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Descargar archivos
         uses: actions/checkout@v4
 
-      - name: Install unzip and gradle
-        run: sudo apt-get update && sudo apt-get install -y unzip gradle
-
-      - name: Unzip project
-        run: |
-          mkdir -p extracted_project
-          ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
-          echo "ZIP file found: $ZIP_FILE"
-          if [ -z "$ZIP_FILE" ]; then
-            echo "Error: No ZIP file found"
-            exit 1
-          fi
-          unzip -o "$ZIP_FILE" -d extracted_project/
-          echo "Contenido extraído:"
-          ls -la extracted_project/
-
-      - name: Setup Java
+      - name: Preparar Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
-      - name: Build with Gradle
-        run: |
-          GRADLEW_PATH=$(find extracted_project -name "gradlew" -type f | head -n 1)
-          if [ -n "$GRADLEW_PATH" ]; then
-            PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-            echo "Directorio con gradlew: $PROJECT_DIR"
-            cd "$PROJECT_DIR"
-            chmod +x ./gradlew
-            ./gradlew assembleDebug --stacktrace
-          else
-            BUILD_GRADLE_PATH=$(find extracted_project -name "build.gradle" -o -name "build.gradle.kts" | head -n 1)
-            if [ -z "$BUILD_GRADLE_PATH" ]; then
-              echo "Error: Tampoco se encontró archivo build.gradle"
-              exit 1
-            fi
-            PROJECT_DIR=$(dirname "$BUILD_GRADLE_PATH")
-            echo "Directorio con build.gradle: $PROJECT_DIR"
-            cd "$PROJECT_DIR"
-            gradle wrapper
-            chmod +x ./gradlew
-            ./gradlew assembleDebug --stacktrace
-          fi
+      - name: Instalar Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Upload APK
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Descomprimir proyecto
+        run: unzip -q CubakanRemesas_ProyectoAndroid.zip -d fuente
+
+      - name: Construir APK
+        working-directory: fuente/CubakanRemesas
+        run: gradle assembleDebug --no-daemon
+
+      - name: Guardar APK
         uses: actions/upload-artifact@v4
         with:
-          name: CubakanRemesas-APK
-          path: '**/build/outputs/apk/debug/app-debug.apk'   name: CubakanRemesas-APK
-          path: '**/build/outputs/apk/debug/app-debug.apk'
+          name: CubakanRemesas-debug-apk
+          path: fuente/CubakanRemesas/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
