@@ -1,0 +1,53 @@
+name: Construir APK de Cubakan Remesas
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, principal]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar archivos del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar herramienta de descompresión
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Descomprimir el proyecto automáticamente
+        run: |
+          mkdir -p extracted_project
+          ZIP_FILE=$(find . -maxdepth 2 -name "CubakanRemesas*.zip" | head -n 1)
+          echo "Archivo ZIP localizado: $ZIP_FILE"
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Error: No se encontró el archivo ZIP de CubakanRemesas"
+            exit 1
+          fi
+          unzip -o "$ZIP_FILE" -d extracted_project/
+          ls -la extracted_project/
+
+      - name: Configurar Java y Compilar APK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Otorgar permisos y compilar con Gradle
+        run: |
+          GRADLEW_PATH=$(find extracted_project -name "gradlew" -type f | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Error: No se encontró el archivo gradlew"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          echo "Directorio del proyecto: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Guardar APK generada
+        uses: actions/upload-artifact@v4
+        with:
+          name: CubakanRemesas-APK
+          path: '**/build/outputs/apk/debug/app-debug.apk'
