@@ -1,0 +1,35 @@
+name: Construir APK de Cubakan Remesas
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, principal]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar archivos
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Descomprimir proyecto
+        run: |
+          unzip -o CubakanRemesas_ProyectoAndroid.zip -d ./
+          
+      - name: Otorgar permisos a Gradlew
+        run: chmod +x ./gradlew || true
+
+      - name: Compilar APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Guardar APK generada
+        uses: actions/upload-artifact@v4
+        with:
+          name: CubakanRemesas-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
